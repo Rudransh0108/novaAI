@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>VIRUSSS. — System Alert </title>
+<style>
+  :root{
+    --bg:#05060a;
+    --panel:#0b0f11;
+    --muted:#9aa6a6;
+    --accent:#0ef08a; /* neon green */
+    --danger:#ff3b30;
+    --glass: rgba(255,255,255,0.02);
+    --glass-2: rgba(255,255,255,0.03);
+  }
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,#000814 0%,#02040a 100%);color:#cdfbd6}
+  .wrap{max-width:1100px;margin:22px auto;padding:18px;display:grid;gap:14px}
+  header{display:flex;align-items:center;gap:14px}
+  h1{margin:0;font-weight:700;font-size:20px;color:var(--accent)}
+  .subtitle{color:var(--muted);font-size:13px}
+  .controls{display:flex;gap:8px;align-items:center}
+  button, .small{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px;cursor:pointer}
+  button.primary{background:linear-gradient(90deg,var(--accent),#45d8b9);color:#021}
+  .panel{display:grid;grid-template-columns:1fr 360px;gap:16px}
+  .card{background:var(--glass);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 28px rgba(0,0,0,0.6)}
+  #left{min-height:520px}
+  pre{white-space:pre-wrap;word-break:break-all}
+  .transcript{height:180px;overflow:auto;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);padding:8px;border-radius:8px;color:#bfffe6}
+  .row{display:flex;gap:8px;align-items:center}
+  .kbd{background:#021014;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);font-weight:700}
+  .big-warning{background:linear-gradient(90deg, rgba(255,59,48,0.12), rgba(255,59,48,0.04)); padding:12px;border-radius:10px;border:1px solid rgba(255,59,48,0.12);color:var(--danger);font-weight:700;margin-bottom:10px}
+  .status-bar{height:14px;border-radius:8px;background:rgba(255,255,255,0.03);overflow:hidden;margin-top:8px}
+  .status-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#8effb0);transition:width 400ms ease}
+  .fake-file-list{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.6}
+  .danger-dot{display:inline-block;width:10px;height:10px;border-radius:999px;background:var(--danger);margin-right:8px;box-shadow:0 0 14px rgba(255,59,48,0.6)}
+  .accent-dot{display:inline-block;width:10px;height:10px;border-radius:999px;background:var(--accent);margin-right:8px;box-shadow:0 0 12px rgba(14,240,138,0.45)}
+  .center{display:flex;align-items:center;justify-content:center}
+  #boomCanvas{position:fixed;inset:0;z-index:9999;display:none;pointer-events:none}
+  .overlay-full{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9998}
+  .panic-screen{width:92%;max-width:980px;background:linear-gradient(180deg,#100f12,#09090a);border-radius:14px;padding:18px;border:2px solid rgba(255,255,255,0.03);box-shadow:0 18px 48px rgba(0,0,0,0.8);text-align:center}
+  .big-title{font-size:32px;color:var(--danger);margin:0 0 8px 0}
+  .btn-row{display:flex;gap:10px;justify-content:center;margin-top:12px}
+  .fake-terminal{background:#010204;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);font-family:monospace;color:#9fffe0;height:220px;overflow:auto}
+  .muted{color:var(--muted)}
+  footer{color:var(--muted);text-align:center;padding:12px 0;font-size:13px}
+  /* make it dramatic */
+  .scan-bar{height:8px;border-radius:999px;background:rgba(255,255,255,0.02);overflow:hidden;margin-top:8px}
+  .scan-fill{height:100%;width:0%;background:linear-gradient(90deg,#14ff9b,#33ffd5);box-shadow:0 0 22px rgba(14,240,138,0.35)}
+  .red{color:var(--danger)}
+  .green{color:var(--accent)}
+  .glow { text-shadow: 0 0 8px rgba(14,240,138,0.3); }
+  /* responsive */
+  @media (max-width:980px){ .panel{grid-template-columns:1fr} #right{order:2} }
+</style>
+</head>
+<body>
+  <canvas id="boomCanvas"></canvas>
+
+  <div class="wrap">
+    <header>
+      <div>
+        <h1 class="glow">J.A.R.V.I.S.</h1>
+        <div class="subtitle">System Alert — Simulation Mode (Harmless demo)</div>
+      </div>
+      <div style="margin-left:auto" class="controls">
+        <div class="muted">Mode: <span id="modeLabel">Demo</span></div>
+        <button id="btnStart" class="primary">Start Scan</button>
+        <button id="btnAbort" class="small">Abort</button>
+        <button id="btnPanic" class="small">Panic Screen</button>
+      </div>
+    </header>
+
+    <div class="panel">
+      <div id="left" class="card">
+        <div class="big-warning" id="topWarning">⚠️ <span id="topWarningText">No threats detected (yet)</span></div>
+
+        <div class="row">
+          <div style="flex:1">
+            <label class="muted">Live scanner output</label>
+            <div class="transcript" id="transcript" aria-live="polite">Ready. Press <span class="kbd">Start Scan</span> to begin.</div>
+          </div>
+          <div style="width:200px">
+            <label class="muted">Overall progress</label>
+            <div class="status-bar"><div class="status-fill" id="overallFill"></div></div>
+            <div style="height:8px"></div>
+            <label class="muted">Scan intensity</label>
+            <div class="scan-bar"><div class="scan-fill" id="scanFill"></div></div>
+            <div style="height:10px"></div>
+            <div class="row"><button id="btnSfx" class="small">Toggle SFX</button><button id="btnReveal" class="small">Reveal Prank</button></div>
+          </div>
+        </div>
+
+        <hr style="border-color:rgba(255,255,255,0.03);margin:12px 0">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label class="muted">Top infected files</label>
+            <div class="fake-file-list" id="fileList">
+              <!-- populated by JS -->
+            </div>
+          </div>
+          <div>
+            <label class="muted">Fake terminal</label>
+            <div class="fake-terminal" id="fakeTerm">> awaiting commands...</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <label class="muted">Action:</label>
+          <select id="actionSelect" style="padding:8px;border-radius:8px;background:transparent;color:inherit;border:1px solid rgba(255,255,255,0.03)">
+            <option value="isolate">Isolate threats (sim)</option>
+            <option value="encrypt">Encrypt (fake)</option>
+            <option value="wipe">Self-destruct animation</option>
+            <option value="annoy">Annoying alarm</option>
+          </select>
+          <button id="btnDo" class="small">Run</button>
+        </div>
+
+      </div>
+
+      <div id="right" class="card">
+        <h3>System Summary</h3>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Demo environment — no real changes will happen.</div>
+
+        <div style="margin-top:8px">
+          <div class="row" style="justify-content:space-between">
+            <div><span class="accent-dot"></span>Scanner</div>
+            <div class="muted" id="scannerStatus">Idle</div>
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:8px">
+            <div><span class="danger-dot"></span>Alert Level</div>
+            <div class="muted" id="alertLevel">Low</div>
+          </div>
+        </div>
+
+        <hr style="border-color:rgba(255,255,255,0.03);margin:12px 0">
+
+        <div>
+          <label class="muted">Utilities</label>
+          <div style="display:grid;gap:8px;margin-top:8px">
+            <button id="btnFakeUpdate" class="small">Run fake system update</button>
+            <button id="btnFakeEncrypt" class="small">Start fake encryption</button>
+            <button id="btnFakeCrash" class="small">Simulate crash (UI)</button>
+            <button id="btnReset" class="small">Reset UI</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      SYSTEMMMM GOT HACKED
+    </footer>
+  </div>
+
+  <!-- Panic overlay -->
+  <div class="overlay-full" id="panicOverlay" style="display:none">
+    <div class="panic-screen">
+      <h2 class="big-title">SYSTEM COMPROMISED</h2>
+      <p class="muted">All user data at risk — immediate action required.</p>
+      <div style="height:8px"></div>
+      <div class="row" style="justify-content:center;">
+        <div style="width:80%;text-align:left">
+          <div style="margin-bottom:6px"><strong>Detected:</strong> multiple intrusion vectors</div>
+          <div style="margin-bottom:6px"><strong>Encrypted:</strong> 1,245 files (simulated)</div>
+          <div style="margin-bottom:6px"><strong>Ransom:</strong> 0.45 BTC (lol)</div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="panicDismiss" class="small">Dismiss (safe)</button>
+        <button id="panicFakeLock" class="small">Simulate Lock</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  J.A.R.V.I.S. harmless prank demo
+  - Generates fake scan output and dramatic animations
+  - Does NOT read/write/delete user files
+  - Uses WebAudio to play beeps/alarms (no external audio files)
+  - Includes self-destruct canvas animation (visual only)
+*/
+
+/* -------------------------
+   Utilities & state
+   ------------------------- */
+const transcript = document.getElementById('transcript');
+const fakeTerm = document.getElementById('fakeTerm');
+const fileList = document.getElementById('fileList');
+const overallFill = document.getElementById('overallFill');
+const scanFill = document.getElementById('scanFill');
+const scannerStatus = document.getElementById('scannerStatus');
+const alertLevel = document.getElementById('alertLevel');
+const topWarningText = document.getElementById('topWarningText');
+const modeLabel = document.getElementById('modeLabel');
+
+let sfxOn = true;
+let audioCtx = null;
+let masterGain = null;
+
+function log(line){
+  const el = document.createElement('div');
+  el.textContent = line;
+  transcript.appendChild(el);
+  transcript.scrollTop = transcript.scrollHeight;
+}
+function term(line){
+  const el = document.createElement('div');
+  el.textContent = line;
+  fakeTerm.appendChild(el);
+  fakeTerm.scrollTop = fakeTerm.scrollHeight;
+}
+
+/* -------------------------
+   WebAudio SFX generator
+   ------------------------- */
+function initAudio(){
+  if(audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.45;
+    masterGain.connect(audioCtx.destination);
+  } catch(e){
+    console.warn('Audio not available', e);
+    audioCtx = null;
+  }
+}
+function beep(freq=440, time=0.12, type='sine'){
+  if(!sfxOn) return;
+  initAudio();
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  o.type = type;
+  o.frequency.value = freq;
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.6, audioCtx.currentTime + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + time);
+  o.connect(g); g.connect(masterGain);
+  o.start();
+  o.stop(audioCtx.currentTime + time + 0.02);
+}
+function alarmBurst(){
+  if(!sfxOn) return;
+  initAudio();
+  if(!audioCtx) return;
+  let t = audioCtx.currentTime;
+  const freqs = [220, 330, 440, 660, 880];
+  freqs.forEach((f,i)=>{
+    const o = audioCtx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.value = f;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t + i*0.06);
+    g.gain.exponentialRampToValueAtTime(0.6, t + i*0.06 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.06 + 0.25);
+    o.connect(g); g.connect(masterGain);
+    o.start(t + i*0.06);
+    o.stop(t + i*0.06 + 0.28);
+  });
+}
+
+/* -------------------------
+   Fake data helpers
+   ------------------------- */
+const suspiciousFiles = [
+  "/Users/alex/Documents/passwords.txt",
+  "/Users/alex/Pictures/vacation.jpg",
+  "/var/log/syslog",
+  "C:\\Users\\john\\desktop\\invoice.pdf",
+  "/home/user/secrets.db",
+  "/media/sdcard/DCIM/IMG_2022.JPG",
+  "/etc/ssh/ssh_host_rsa_key",
+  "/Users/alex/Downloads/installer.exe",
+  "/home/user/notes.txt",
+  "/Users/alex/Music/favorites.mp3"
+];
+
+function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function showFileList(){
+  fileList.innerHTML = '';
+  const count = 6 + Math.floor(Math.random()*6);
+  for(let i=0;i<count;i++){
+    const f = pickRandom(suspiciousFiles);
+    const el = document.createElement('div');
+    el.innerHTML = `<span class="muted">${i+1}.</span> <strong>${f}</strong> — <span class="muted">risky</span>`;
+    fileList.appendChild(el);
+  }
+}
+
+/* -------------------------
+   Fake scanning logic
+   ------------------------- */
+let scanInterval = null;
+let overall = 0;
+function startScan(){
+  if(scanInterval) return;
+  overall = 0;
+  overallFill.style.width = '0%';
+  scanFill.style.width = '0%';
+  scannerStatus.textContent = 'Scanning';
+  alertLevel.textContent = 'Low';
+  topWarningText.textContent = 'Scan in progress — simulated';
+  log('--- starting simulated scan ---');
+  term('> init scanner v4.2');
+  showFileList();
+  scanInterval = setInterval(()=>{
+    // increase progress
+    const step = 2 + Math.floor(Math.random()*5);
+    overall = Math.min(100, overall + step);
+    overallFill.style.width = overall + '%';
+    // moving scan bar
+    const s = Math.min(100, Math.floor(overall * (1 + Math.random()*0.1)));
+    scanFill.style.width = s + '%';
+    // generate logs
+    const fle = pickRandom(suspiciousFiles);
+    const severity = Math.random() > 0.78 ? 'CRITICAL' : (Math.random() > 0.6 ? 'HIGH' : 'MEDIUM');
+    const logLine = `${new Date().toLocaleTimeString()} [${severity}] scanned ${fle}`;
+    log(logLine);
+    term(`[scan] ${fle} => ${severity}`);
+    if(Math.random() > 0.9) { beep(880,0.08,'square'); } else beep(440+(Math.random()*400),0.06);
+    // bump alert level occasionally
+    if(overall > 30 && Math.random() > 0.85){ alertLevel.textContent = 'Elevated'; topWarningText.textContent = 'Potential threats detected'; }
+    if(overall > 65 && Math.random() > 0.8){ alertLevel.textContent = 'High'; topWarningText.textContent = 'Multiple critical items found'; }
+    if(overall >= 100){
+      completeScan();
+    }
+  }, 700);
+}
+
+function completeScan(){
+  clearInterval(scanInterval);
+  scanInterval = null;
+  scannerStatus.textContent = 'Idle';
+  log('--- scan complete (simulated) ---');
+  term('[scan] completed. threats: ' + (2 + Math.floor(Math.random()*6)));
+  beep(660,0.2,'triangle');
+  // set a fake top infected file
+  const top = pickRandom(suspiciousFiles);
+  topWarningText.textContent = `Top infected: ${top}`;
+  // set alert to high
+  alertLevel.textContent = 'High';
+}
+
+/* -------------------------
+   Actions (fake)
+   ------------------------- */
+function fakeIsolate(){
+  log('isolate: moving suspicious processes to quarantine (simulated)...');
+  term('> isolating processes...');
+  beep(550,0.1);
+  setTimeout(()=>{ term('> quarantine complete (simulated)'); log('isolate complete'); }, 1200);
+}
+function fakeEncryptSequence(){
+  // visually "encrypt" by printing fake filenames and percentages
+  const files = [...Array(18)].map((_,i)=> `${pickRandom(suspiciousFiles)} (${Math.floor(Math.random()*99)+1}%)`);
+  term('> encrypting files (simulated) ...');
+  let idx = 0;
+  const id = setInterval(()=>{
+    if(idx >= files.length){ clearInterval(id); term('> encryption simulation done'); beep(220,0.4,'sine'); return; }
+    term(`[encrypt] ${files[idx]}`);
+    idx++;
+    beep(400 + Math.random()*120, 0.05);
+  }, 160);
+}
+function startSelfDestruct(){
+  // run visual canvas explosion then reveal
+  runBoomAnimation();
+  // after animation, show fake "wipe progress"
+  let pct = 0;
+  const wipeDiv = document.createElement('div');
+  wipeDiv.style.marginTop = '12px';
+  wipeDiv.innerHTML = `<div style="font-weight:700;color:var(--danger)">WIPING DISK (simulated)</div>
+                       <div class="status-bar" style="margin-top:6px"><div class="status-fill" id="wipeFill" style="width:0%;background:linear-gradient(90deg,var(--danger),#ff7b7b)"></div></div>`;
+  transcript.appendChild(wipeDiv);
+  transcript.scrollTop = transcript.scrollHeight;
+  const id = setInterval(()=>{
+    pct += 6 + Math.floor(Math.random()*10);
+    document.getElementById('wipeFill').style.width = Math.min(100,pct) + '%';
+    beep(200 + Math.random()*200, 0.04, 'sawtooth');
+    if(pct >= 100){
+      clearInterval(id);
+      term('> wipe simulation complete — no data harmed');
+      // dramatic reveal after short pause
+      setTimeout(()=> showReveal('selfdestruct'), 900);
+    }
+  }, 500);
+}
+
+function annoyAlarm(){
+  alarmBurst();
+  log('Annoying alarm emitted (simulated).');
+  term('> alarm sequence triggered (simulated)');
+}
+
+/* -------------------------
+   Self-destruct canvas
+   ------------------------- */
+const boomCanvas = document.getElementById('boomCanvas');
+const bc = boomCanvas;
+const Bctx = bc.getContext('2d');
+function runBoomAnimation(){
+  bc.width = window.innerWidth;
+  bc.height = window.innerHeight;
+  bc.style.display = 'block';
+  let particles = [];
+  for(let i=0;i<220;i++){
+    particles.push({
+      x: Math.random()*bc.width,
+      y: Math.random()*bc.height,
+      vx: (Math.random()-0.5)*12,
+      vy: (Math.random()-0.5)*12,
+      r: Math.random()*5+1,
+      life: Math.random()*80+60,
+      c: `hsl(${Math.random()*50},100%,60%)`
+    });
+  }
+  let t = 0;
+  const id = setInterval(()=>{
+    Bctx.fillStyle = 'rgba(0,0,0,0.18)';
+    Bctx.fillRect(0,0,bc.width,bc.height);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.life -= 1;
+      Bctx.beginPath();
+      Bctx.fillStyle = p.c;
+      Bctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      Bctx.fill();
+    });
+    t++;
+    if(t>160){ clearInterval(id); Bctx.clearRect(0,0,bc.width,bc.height); bc.style.display='none'; log('boom animation done'); }
+  }, 18);
+}
+
+/* -------------------------
+   Panic overlay
+   ------------------------- */
+const panicOverlay = document.getElementById('panicOverlay');
+document.getElementById('btnPanic').addEventListener('click', ()=> panicOverlay.style.display = 'flex');
+document.getElementById('panicDismiss').addEventListener('click', ()=> panicOverlay.style.display = 'none');
+document.getElementById('panicFakeLock').addEventListener('click', ()=> {
+  // show a modal-like full-screen simulated lock (but dismissible)
+  const lock = document.createElement('div');
+  lock.style.position='fixed'; lock.style.inset=0; lock.style.background='#000'; lock.style.color='#fff'; lock.style.zIndex=99999; lock.style.display='flex'; lock.style.alignItems='center'; lock.style.justifyContent='center'; lock.style.flexDirection='column';
+  lock.innerHTML = `<h1 style="font-size:28px;color:var(--danger)">SYSTEM LOCKED (SIMULATED)</h1>
+                    <p style="max-width:600px;text-align:center;color:var(--muted)">This is only a demonstration. Click UNLOCK to restore the UI.</p>`;
+  const btn = document.createElement('button'); btn.textContent='UNLOCK (safe)'; btn.style.marginTop='18px'; btn.className='small';
+  btn.addEventListener('click', ()=> { document.body.removeChild(lock); });
+  lock.appendChild(btn);
+  document.body.appendChild(lock);
+});
+
+/* -------------------------
+   Control bindings
+   ------------------------- */
+document.getElementById('btnStart').addEventListener('click', ()=> {
+  startScan();
+  modeLabel.textContent = 'Simulating';
+});
+document.getElementById('btnAbort').addEventListener('click', ()=> {
+  if(scanInterval) clearInterval(scanInterval);
+  scanInterval = null;
+  overallFill.style.width = '0%';
+  scanFill.style.width = '0%';
+  scannerStatus.textContent = 'Aborted';
+  log('--- scan aborted (simulated) ---');
+  term('[scan] aborted');
+  beep(300,0.14,'sine');
+});
+document.getElementById('btnSfx').addEventListener('click', ()=> {
+  sfxOn = !sfxOn;
+  document.getElementById('btnSfx').textContent = sfxOn ? 'SFX On' : 'SFX Off';
+});
+document.getElementById('btnReveal').addEventListener('click', ()=> showReveal('manual') );
+document.getElementById('btnDo').addEventListener('click', ()=> {
+  const action = document.getElementById('actionSelect').value;
+  if(action === 'isolate') fakeIsolate();
+  if(action === 'encrypt') fakeEncryptSequence();
+  if(action === 'wipe') startSelfDestruct();
+  if(action === 'annoy') annoyAlarm();
+});
+document.getElementById('btnFakeUpdate').addEventListener('click', ()=> {
+  term('> starting system update (simulated)...');
+  let p=0;
+  const id = setInterval(()=> {
+    p+=10; term(`[update] ${p}%`); beep(300 + Math.random()*200, 0.04);
+    if(p>=100){ clearInterval(id); term('[update] complete'); log('fake update finished'); }
+  }, 280);
+});
+document.getElementById('btnFakeEncrypt').addEventListener('click', fakeEncryptSequence);
+document.getElementById('btnFakeCrash').addEventListener('click', ()=> {
+  // simulate UI crash with red screen then recover
+  const overlay = document.createElement('div');
+  overlay.style.position='fixed'; overlay.style.inset=0; overlay.style.background= 'linear-gradient(90deg, rgba(255,59,48,0.95), rgba(0,0,0,0.7))'; overlay.style.zIndex=99997; overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center'; overlay.style.color='#fff'; overlay.innerHTML = `<div style="text-align:center"><h1>CRASH</h1><p>System error (simulated). Restoring...</p></div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=> { document.body.removeChild(overlay); term('[ui] restored (sim)'); }, 2200);
+});
+document.getElementById('btnReset').addEventListener('click', ()=> {
+  transcript.innerHTML = 'Ready. Press <span class="kbd">Start Scan</span> to begin.';
+  fakeTerm.innerHTML = '> awaiting commands...';
+  overallFill.style.width = '0%';
+  scanFill.style.width = '0%';
+  scannerStatus.textContent = 'Idle';
+  alertLevel.textContent = 'Low';
+  topWarningText.textContent = 'No threats detected (yet)';
+  modeLabel.textContent = 'Demo';
+  log('UI reset to default (simulated)');
+});
+
+/* reveal "prank" message */
+function showReveal(mode='auto'){
+  // pause audio if any
+  if(audioCtx && audioCtx.state !== 'closed') {
+    try { masterGain.gain.setValueAtTime(0, audioCtx.currentTime + 0.02); } catch(e){}
+  }
+
+  // small modal reveal
+  const revealDiv = document.createElement('div');
+  revealDiv.style.position='fixed'; revealDiv.style.inset=0; revealDiv.style.display='flex'; revealDiv.style.alignItems='center'; revealDiv.style.justifyContent='center'; revealDiv.style.zIndex=99999; revealDiv.style.background='rgba(0,0,0,0.72)';
+  revealDiv.innerHTML = `<div style="background:linear-gradient(180deg,#09120b,#07100a);padding:24px;border-radius:12px;border:2px solid rgba(255,255,255,0.04);text-align:center;color:#dfffe6;max-width:720px">
+    <h2 style="margin:0 0 6px;color:var(--accent)">Relax — It was a simulation</h2>
+    <p class="muted" style="margin:10px 0 6px">No files were harmed. This demonstration is purely visual and harmless.</p>
+    <p style="margin:6px 0;font-size:13px;color:var(--muted)">Mode: <strong>${mode}</strong> • Use only for fun and consented pranks.</p>
+    <div style="margin-top:10px"><button id="closeReveal" class="small">Close</button></div>
+    </div>`;
+  document.body.appendChild(revealDiv);
+  document.getElementById('closeReveal').addEventListener('click', ()=> {
+    document.body.removeChild(revealDiv);
+  });
+}
+
+/* start with a bit of content */
+log('system got initiated.');
+term('> demo mode ready');
+showFileList();
+
+/* Extra: keyboard shortcut: press "X" to abort or "R" to reveal */
+document.addEventListener('keydown', (e)=>{
+  if(e.key.toLowerCase() === 'x'){ document.getElementById('btnAbort').click(); }
+  if(e.key.toLowerCase() === 'r'){ showReveal('keyboard'); }
+});
+
+/* Prevent accidental navigation alert (soft) - harmless prompt */
+window.addEventListener('beforeunload', (ev) => {
+  // only a friendly prompt; not required. Keep commented out by default.
+  // ev.preventDefault();
+  // ev.returnValue = 'Are you sure?';
+});
+
+</script>
+</body>
+</html>
