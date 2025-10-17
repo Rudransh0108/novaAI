@@ -1,136 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("Service Worker registered 😈"))
-      .catch(err => console.log("SW fail: ", err));
-  }
-</script>
-  <meta charset="UTF-8">
-  <title>😈 SYSTEM HACKED 😈</title>
-  <style>
-    body {
-      margin: 0;
-      background: black;
-      color: lime;
-      font-family: monospace;
-      overflow: hidden;
-    }
-    #logo {
-      text-align: center;
-      font-size: 28px;
-      font-weight: bold;
-      color: red;
-      margin-top: 20px;
-      animation: blinkLogo 0.5s infinite alternate;
-    }
-    @keyframes blinkLogo {
-      from { opacity: 1; }
-      to { opacity: 0.3; }
-    }
-    #screen {
-      white-space: pre-wrap;
-      font-size: 14px;
-      padding: 20px;
-    }
-    .popup {
-      position: fixed;
-      background: red;
-      color: white;
-      font-size: 20px;
-      padding: 20px;
-      border: 3px solid white;
-      z-index: 9999;
-      animation: blink 0.3s infinite alternate;
-    }
-    @keyframes blink {
-      from { opacity: 1; }
-      to { opacity: 0.2; }
-    }
-  </style>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA AI Neural Core Interface</title>
+<style>
+  /* -------- COLORS & RESET -------- */
+  * { box-sizing: border-box; margin:0; padding:0; font-family: Consolas, monospace; }
+  body { background: #060e14; color: #8cebeb; overflow: hidden; }
+
+  /* -------- LAYOUT -------- */
+  #container { display:flex; height:100vh; }
+  .panel { border-radius:10px; background: linear-gradient(to bottom, rgba(4,45,52,0.94), rgba(6,30,36,0.86)); border:1px solid rgba(0,160,160,0.12); padding:14px; display:flex; flex-direction:column; }
+  #left { width:320px; margin:10px; }
+  #right { width:320px; margin:10px; align-items:center; }
+  #center { flex:1; position:relative; }
+
+  /* -------- LABELS -------- */
+  .label { color:#8cebeb; font-weight:bold; margin-bottom:4px; }
+  .small-label { font-size:10px; }
+  .stat-box { background: linear-gradient(to bottom, rgba(6,22,28,0.78), rgba(12,40,48,0.59)); border-radius:6px; border:1px solid rgba(30,200,200,0.16); padding:6px; margin-bottom:6px; }
+  .progress { width:100%; height:18px; background:#081e24; border-radius:6px; position:relative; overflow:hidden; }
+  .progress-fill { height:100%; width:0%; background: #12e8e8; border-radius:6px; transition: width 0.3s; text-align:center; color:#a0fafa; line-height:18px; font-size:9px; }
+
+  /* -------- CLOCK & INFO -------- */
+  #clock { text-align:center; font-size:14px; margin-bottom:10px; }
+  .info-line { margin-bottom:6px; }
+  .info-title { font-size:8px; font-weight:bold; }
+  .info-value { font-size:10px; color:#12e8e8; }
+
+  /* -------- WEBCAM -------- */
+  #cam { border-radius:10px; border:1px solid rgba(20,200,200,0.16); background: rgba(0,0,0,0.2); width:260px; height:170px; }
+
+  /* -------- CANVAS -------- */
+  #novaCanvas { width:100%; height:100%; display:block; background:#060e14; }
+
+</style>
 </head>
 <body>
-  <!-- Ruddi Bhai Danger Logo -->
-  <div id="logo">☠️ RUDDI BHAI DANGER ☠️</div>
+<div id="container">
+  <!-- LEFT PANEL -->
+  <div id="left" class="panel">
+    <div class="label">SYSTEM STATUS</div>
+    <div class="stat-box">
+      <div class="small-label">CPU UTILIZATION</div>
+      <div class="progress"><div id="cpuBar" class="progress-fill">0%</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="small-label">MEMORY ALLOCATION</div>
+      <div class="progress"><div id="memBar" class="progress-fill">0 GB</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="small-label">STORAGE CAPACITY</div>
+      <div class="progress"><div id="storageBar" class="progress-fill">0 GB</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="small-label">CORE TEMPERATURE</div>
+      <div class="progress"><div id="tempBar" class="progress-fill" style="background: linear-gradient(to right, #12e8e8, #ffaa00, #ff3c00);">0°C</div></div>
+    </div>
+    <div class="label">ENVIRONMENT</div>
+    <div class="stat-box">
+      <div class="small-label">NEURAL CITY</div>
+      <div class="small-label">24°C</div>
+      <div class="small-label">CLEAR</div>
+    </div>
+  </div>
 
-  <div id="screen"></div>
+  <!-- CENTER CANVAS -->
+  <div id="center">
+    <canvas id="novaCanvas"></canvas>
+  </div>
 
-  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-  <audio id="glitch" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+  <!-- RIGHT PANEL -->
+  <div id="right" class="panel">
+    <div class="label">TEMPORAL SYNCHRONIZATION</div>
+    <div id="clock"></div>
 
-  <script>
-    const screen = document.getElementById("screen");
-    const beep = document.getElementById("beep");
-    const glitch = document.getElementById("glitch");
+    <div class="label">NETWORK INTERFACE</div>
+    <div class="info-line"><div class="info-title">IP ADDRESS</div><div class="info-value">10.21.106.77</div></div>
+    <div class="info-line"><div class="info-title">BANDWIDTH</div><div class="info-value">↑5.8 Mbps / ↓56.2 Mbps</div></div>
+    <div class="info-line"><div class="info-title">CONNECTION</div><div class="info-value">WiFi (NOVA_5G) - 95%</div></div>
 
-    const messages = [
-      "[ERROR] Unauthorized access detected...",
-      "[WARNING] Malware found in system32\\",
-      "[ALERT] Sending private files to remote server...",
-      "[CRITICAL] Overwriting boot sector...",
-      "[CRITICAL] Disconnecting antivirus...",
-      "[CRITICAL] Deleting C:\\Users\\...",
-      "Encrypting files...",
-      "System will shut down in 10 seconds...",
-    ];
+    <div class="label">VISUAL INPUT</div>
+    <video id="cam" autoplay muted></video>
+  </div>
+</div>
 
-    let i = 0;
-    function typeLine() {
-      if (i < messages.length) {
-        screen.innerHTML += messages[i] + "\n";
-        beep.play();
-        i++;
-        setTimeout(typeLine, 1200);
-      } else {
-        chaos();
+<script>
+  // ---- SIMULATED SYSTEM STATS ----
+  function updateStats() {
+    const cpu = Math.floor(Math.random()*100);
+    const memUsed = (Math.random()*16).toFixed(1);
+    const memTotal = 16;
+    const storageUsed = Math.floor(Math.random()*500);
+    const storageTotal = 512;
+    const temp = Math.floor(30 + Math.random()*70);
+
+    document.getElementById('cpuBar').style.width = cpu + '%';
+    document.getElementById('cpuBar').textContent = cpu + '%';
+
+    document.getElementById('memBar').style.width = (memUsed/memTotal*100) + '%';
+    document.getElementById('memBar').textContent = memUsed + ' / ' + memTotal + ' GB';
+
+    document.getElementById('storageBar').style.width = (storageUsed/storageTotal*100) + '%';
+    document.getElementById('storageBar').textContent = storageUsed + ' / ' + storageTotal + ' GB';
+
+    document.getElementById('tempBar').style.width = (temp) + '%';
+    document.getElementById('tempBar').textContent = temp + '°C';
+  }
+  setInterval(updateStats,1000);
+
+  // ---- CLOCK ----
+  function updateClock(){
+    const now = new Date();
+    const dateStr = "Friday, 17 October 2025";
+    document.getElementById('clock').innerHTML = now.toLocaleTimeString() + '<br>' + dateStr;
+  }
+  setInterval(updateClock,1000);
+
+  // ---- WEBCAM ----
+  const video = document.getElementById('cam');
+  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({video:true}).then(stream => {
+      video.srcObject = stream;
+    });
+  }
+
+  // ---- CANVAS ANIMATION ----
+  const canvas = document.getElementById('novaCanvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  function resizeCanvas(){ width = canvas.width = canvas.offsetWidth; height = canvas.height = canvas.offsetHeight; }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // PARTICLES
+  const particles = [];
+  for(let i=0;i<90;i++){
+    particles.push({x:Math.random(), y:Math.random(), r:Math.random()*2+0.4, alpha:Math.random()*0.8+0.15, drift:(Math.random()*2-1)*0.0009});
+  }
+  let phase=0, rotation=0, clickAnim=false, clickProgress=0;
+
+  canvas.addEventListener('click', e=>{
+    const rect = canvas.getBoundingClientRect();
+    const cx = width/2, cy = height/2;
+    const dist = Math.hypot(e.clientX-rect.left-cx, e.clientY-rect.top-cy);
+    if(dist<60){ clickAnim=true; clickProgress=0; }
+  });
+
+  function draw(){
+    ctx.clearRect(0,0,width,height);
+    // Background grid
+    ctx.strokeStyle='rgba(6,18,22,0.35)'; ctx.lineWidth=1;
+    const step = 60, ox = (phase*5)%step, oy = (phase*3)%step;
+    for(let x=-step;x<width+step;x+=step){ ctx.beginPath(); ctx.moveTo(x+ox,0); ctx.lineTo(x+ox,height); ctx.stroke(); }
+    for(let y=-step;y<height+step;y+=step){ ctx.beginPath(); ctx.moveTo(0,y+oy); ctx.lineTo(width,y+oy); ctx.stroke(); }
+
+    // Particles
+    particles.forEach(p=>{
+      p.x += p.drift;
+      if(p.x<-0.03||p.x>1.03){ p.x=Math.random(); p.y=Math.random(); p.r=Math.random()*2+0.4; p.alpha=Math.random()*0.8+0.15; p.drift=(Math.random()*2-1)*0.0009; }
+      ctx.fillStyle=`rgba(10,220,220,${p.alpha})`;
+      ctx.beginPath(); ctx.arc(p.x*width,p.y*height,p.r*1.6,0,Math.PI*2); ctx.fill();
+    });
+
+    const cx = width/2, cy = height/2;
+
+    // Central NOVA glow
+    const grad = ctx.createRadialGradient(cx,cy,38,cx,cy,80);
+    grad.addColorStop(0,'rgba(0,160,160,1)');
+    grad.addColorStop(1,'rgba(6,30,36,0)');
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(cx,cy,80,0,Math.PI*2); ctx.fill();
+
+    // Center disk
+    ctx.fillStyle='rgba(0,160,160,1)'; ctx.beginPath(); ctx.arc(cx,cy,38,0,Math.PI*2); ctx.fill();
+
+    // NOVA text
+    ctx.fillStyle='rgba(12,240,240,1)'; ctx.font='22px Orbitron, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('NOVA',cx,cy);
+
+    // Click ripple
+    if(clickAnim){
+      clickProgress +=0.035;
+      const eased = 1 - Math.pow(1-clickProgress,3);
+      const radius = eased*250;
+      const alpha = Math.max(0,200*(1-clickProgress))/255;
+      ctx.strokeStyle=`rgba(20,240,240,${alpha})`;
+      ctx.lineWidth = 4*(1-eased);
+      ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.stroke();
+      if(clickProgress>=1){ clickAnim=false; clickProgress=0; }
+    }
+
+    // Rings
+    const maxRadius = Math.min(width,height)*0.36;
+    for(let i=0;i<7;i++){
+      const r = maxRadius*(i+1)/(7+0.6), segments = 12 + i*4;
+      ctx.strokeStyle=`rgba(12,220,220,${Math.max(40,160-i*12)/255})`; ctx.lineWidth=Math.max(1,5-Math.floor(i/2));
+      const segAngle = 2*Math.PI/segments, segLen = segAngle*0.55, startOffset = (phase*20*(0.5+i*0.06))*Math.PI/180 + i*6*Math.PI/180;
+      for(let s=0;s<segments;s++){
+        const a1 = s*segAngle + startOffset;
+        ctx.beginPath();
+        ctx.arc(cx,cy,r,a1,a1+segLen);
+        ctx.stroke();
       }
     }
-    typeLine();
 
-    // Random scary popups
-    function chaos() {
-      setInterval(() => {
-        let popup = document.createElement("div");
-        popup.className = "popup";
-        popup.textContent = "⚠ SYSTEM BREACH ⚠";
-        popup.style.top = Math.random()*window.innerHeight+"px";
-        popup.style.left = Math.random()*window.innerWidth+"px";
-        document.body.appendChild(popup);
-        setTimeout(() => popup.remove(), 800);
-      }, 500);
-
-      // Random background color flicker
-      setInterval(() => {
-        document.body.style.background = ["black","red","purple","darkblue"][Math.floor(Math.random()*4)];
-        glitch.play();
-      }, 300);
-
-      // Disturb mouse
-      document.addEventListener("mousemove", e=>{
-        window.scrollTo(Math.random()*500, Math.random()*500);
-      });
-
-      // Auto BSOD after 20 sec
-      setTimeout(fakeBlueScreen, 20000);
-    }
-
-    // Fake BSOD
-    function fakeBlueScreen() {
-      document.body.style.background = "#0000AA";
-      document.body.style.color = "white";
-      document.body.style.fontSize = "18px";
-      document.body.innerHTML = 
-        "<br><br>A problem has been detected and Windows has been shut down to prevent damage.<br><br>" +
-        "If this is the first time you've seen this Stop error screen,<br>" +
-        "restart your computer. If this screen appears again, follow<br>" +
-        "these steps:<br><br>" +
-        "Check to make sure any new hardware or software is properly installed.<br>" +
-        "If this is a new installation, ask your hardware or software manufacturer<br>" +
-        "for any Windows updates you might need.<br><br>" +
-        "*** STOP: 0x0000007B (0xF880009C, 0xC0000034)";
-    }
-  </script>
+    phase+=0.025; rotation+=0.4;
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
 </body>
 </html>
